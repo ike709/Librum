@@ -1,0 +1,55 @@
+name: Build Librum on Windows
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Set up Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.5.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+
+      - name: Set up Visual Studio 2019
+        uses: egor-tensin/setup-msvc@v1
+        with:
+          msvc-version: 2019
+
+      - name: Install CMake
+        uses: lukka/get-cmake@v4
+
+      - name: Create build folder
+        run: |
+          mkdir build
+          cd build
+
+      - name: Run CMake
+        run: |
+          cmake -DBUILD_TESTS=Off -DCMAKE_PREFIX_PATH=${{ env.QT_INSTALL_PATH }} ..
+        env:
+          QT_INSTALL_PATH: ${{ github.workspace }}\Qt\6.5.0\msvc2019_64
+          
+      - name: Build the project
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: librum-binary
+          path: build/librum.exe
