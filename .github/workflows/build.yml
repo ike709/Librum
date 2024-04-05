@@ -25,7 +25,14 @@ jobs:
           arch: 'win64_msvc2019_64'
 
       - name: Install CMake
-        uses: jwlawson/actions-setup-cmake@v1.4
+        run: |
+          $cmakeVersion = "3.22.0" # Specify the version you need
+          $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$cmakeVersion/cmake-$cmakeVersion-windows-x86_64.zip"
+          $cmakeZip = "$Env:TEMP\cmake.zip"
+          Invoke-WebRequest -Uri $cmakeUrl -OutFile $cmakeZip
+          Expand-Archive -LiteralPath $cmakeZip -DestinationPath $Env:TEMP
+          $cmakeDir = "$Env:TEMP\cmake-$cmakeVersion-windows-x86_64"
+          echo "$cmakeDir\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Configure the project
         run: |
