@@ -1,0 +1,54 @@
+name: Build Librum on Windows
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'recursive'
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.x'
+
+      - name: Set up Qt
+        uses: jurplel/install-qt-action@v2
+        with:
+          version: '6.5.0'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_msvc2019_64'
+
+      - name: Install CMake
+        run: |
+          $cmakeVersion = "3.22.0" # Specify the version you need
+          $cmakeUrl = "https://github.com/Kitware/CMake/releases/download/v$cmakeVersion/cmake-$cmakeVersion-windows-x86_64.zip"
+          $cmakeZip = "$Env:TEMP\cmake.zip"
+          Invoke-WebRequest -Uri $cmakeUrl -OutFile $cmakeZip
+          Expand-Archive -LiteralPath $cmakeZip -DestinationPath $Env:TEMP
+          $cmakeDir = "$Env:TEMP\cmake-$cmakeVersion-windows-x86_64"
+          echo "$cmakeDir\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Configure the project
+        run: |
+          mkdir build
+          cd build
+          cmake -DBUILD_TESTS=Off -DCMAKE_PREFIX_PATH=${{ env.QT_INSTALL_PATH }} ..
+        env:
+          QT_INSTALL_PATH: C:\Qt\6.5.0\msvc2019_64
+          
+      - name: Build the project
+        run: |
+          cd build
+          cmake --build . --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: librum-binary
+          path: build/librum.exe
